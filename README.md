@@ -128,6 +128,10 @@ spec-option-extractor-ros/
 dotnet test tests/
 ```
 
+### VS Code Test Explorer
+
+Open the `spec-option-extractor-ros/` folder in VS Code with the **C# Dev Kit** extension installed. The solution file (`SpecOptionExtractor.sln`) will be detected automatically, and all 53 tests will appear in the **Test Explorer** panel where you can browse, run, and debug them individually or by group.
+
 ### What's tested
 
 **`ToSnakeIdTests`** — The ID generation function must match the Python extractor exactly, since both tools produce IDs consumed by the same specbuilder UI. Tests cover:
