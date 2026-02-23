@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Inventory Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #161B1E;
+    --card-bg: #232A2E;
+    --text: #F0F2F3;
+    --text-muted: #8A9499;
+    --border: rgba(255,255,255,0.1);
+    --success: #4CAF50;
+    --accent: #26C6DA;
+    --why-bg: rgba(76,175,80,0.06);
+    --why-border: rgba(76,175,80,0.25);
+    --input-bg: #1A1F23;
+    --hover-bg: rgba(255,255,255,0.04);
+    --cap-prefix: #5A6469;
+}
+html.light {
+    --bg: #F0F2F4;
+    --card-bg: #FFFFFF;
+    --text: #1E2528;
+    --text-muted: #5A6469;
+    --border: rgba(0,0,0,0.1);
+    --why-bg: rgba(76,175,80,0.06);
+    --why-border: rgba(76,175,80,0.3);
+    --input-bg: #E8EBED;
+    --hover-bg: rgba(0,0,0,0.03);
+    --cap-prefix: #8A9499;
+}
+html { scrollbar-gutter: stable; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header */
+.header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: var(--card-bg);
+}
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--success);
+}
+.header-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(76,175,80,0.15);
+    color: var(--success);
+    font-weight: 500;
+}
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.header-actions button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.header-actions button:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+}
+.theme-toggle {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    font-size: 14px !important;
+}
+
+/* Stats bar */
+.stats-bar {
+    padding: 10px 24px;
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+    flex-wrap: wrap;
+    align-items: center;
+}
+.stat {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.stat strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* Controls bar */
+.controls-bar {
+    padding: 12px 24px;
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+    align-items: center;
+    flex-wrap: wrap;
+}
+.search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--success); }
+.search-input::placeholder { color: var(--text-muted); }
+.scheme-select {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+}
+.scheme-select:focus { border-color: var(--success); }
+
+/* Main content */
+.main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+
+/* Category cards */
+.category-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+.cat-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    gap: 8px;
+    transition: background 0.15s;
+}
+.cat-header:hover { background: var(--hover-bg); }
+.cat-arrow {
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: transform 0.15s;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.cat-arrow.open { transform: rotate(90deg); }
+.cat-name {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text);
+}
+.cat-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+.cat-items {
+    display: none;
+    border-top: 1px solid var(--border);
+}
+.cat-items.open { display: block; }
+
+/* Items */
+.inv-item {
+    padding: 12px 16px 12px 38px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+}
+.inv-item:last-child { border-bottom: none; }
+.inv-item:hover { background: var(--hover-bg); }
+.inv-item-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+.inv-item-name .cap-count {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: 6px;
+}
+.inv-item-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 4px;
+}
+.inv-item-why {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 6px 0;
+    padding: 6px 10px;
+    background: var(--why-bg);
+    border-left: 2px solid var(--why-border);
+    border-radius: 0 4px 4px 0;
+    font-style: italic;
+}
+.inv-item-class {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    color: var(--accent);
+}
+.inv-item-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Capabilities */
+.inv-capability {
+    padding: 8px 16px 8px 52px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+}
+.inv-capability:last-child { border-bottom: none; }
+.inv-capability:hover { background: var(--hover-bg); }
+.cap-prefix {
+    color: var(--cap-prefix);
+    margin-right: 6px;
+    font-size: 12px;
+}
+.inv-cap-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+.inv-cap-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 2px;
+    padding-left: 20px;
+}
+.inv-cap-why {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 4px 0;
+    margin-left: 20px;
+    padding: 5px 9px;
+    background: var(--why-bg);
+    border-left: 2px solid var(--why-border);
+    border-radius: 0 4px 4px 0;
+    font-style: italic;
+}
+.inv-cap-sig {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    color: var(--accent);
+    padding-left: 20px;
+    margin-bottom: 2px;
+}
+.inv-cap-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding-left: 20px;
+}
+
+/* Standalone capability (no parent) — same level as options */
+.inv-capability.standalone {
+    padding-left: 38px;
+}
+.inv-capability.standalone .inv-cap-desc,
+.inv-capability.standalone .inv-cap-why,
+.inv-capability.standalone .inv-cap-sig,
+.inv-capability.standalone .inv-cap-meta {
+    padding-left: 0;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+.empty-state h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--text);
+    font-weight: 600;
+}
+.empty-state p {
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto;
+}
+.empty-state code {
+    font-size: 12px;
+    background: var(--input-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* Hide helper */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <h1>Code Inventory</h1>
+        <span class="header-badge" id="totalBadge">0 items</span>
+    </div>
+    <div class="header-actions">
+        <button onclick="expandAll()">Expand All</button>
+        <button onclick="collapseAll()">Collapse All</button>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">&#9790;</button>
+    </div>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="controls-bar">
+    <input type="text" class="search-input" id="searchInput" placeholder="Filter inventory..." oninput="applyFilters()">
+    <select class="scheme-select" id="schemeSelect" onchange="applyFilters()">
+        <option value="">All schemes</option>
+    </select>
+</div>
+
+<div class="main" id="mainContent">
+    <div class="empty-state" id="emptyState">
+        <h2>No Code Inventory Data</h2>
+        <p>Place <code>code-options.js</code> and <code>code-capabilities.js</code> in the same directory as this file, then reload.</p>
+    </div>
+</div>
+
+<script>
+/* ── State ── */
+let grouped = {};      // { category: { options: [...], capabilities: [...] } }
+let allSchemes = [];
+let preFilterCatState = null;
+const LS_PREFIX = 'code-inventory-';
+
+/* ── Data loading ── */
+function loadScript(src) {
+    return new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = () => resolve(true);
+        s.onerror = () => resolve(false);
+        document.head.appendChild(s);
+    });
+}
+
+async function init() {
+    const theme = localStorage.getItem(LS_PREFIX + 'theme') || 'dark';
+    applyTheme(theme);
+
+    await Promise.all([
+        loadScript('code-options.js'),
+        loadScript('code-capabilities.js')
+    ]);
+
+    const hasOptions = typeof CODE_OPTIONS !== 'undefined';
+    const hasCapabilities = typeof CODE_CAPABILITIES !== 'undefined';
+
+    if (!hasOptions && !hasCapabilities) {
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('statsBar').classList.add('hidden');
+        return;
+    }
+
+    document.getElementById('emptyState').classList.add('hidden');
+    buildGrouped();
+    collectSchemes();
+    renderStats();
+    renderCategories();
+}
+
+/* ── Group data ── */
+function buildGrouped() {
+    grouped = {};
+    const opts = (typeof CODE_OPTIONS !== 'undefined') ? CODE_OPTIONS : {};
+    const caps = (typeof CODE_CAPABILITIES !== 'undefined') ? CODE_CAPABILITIES : {};
+
+    // Index options by id for parent linking
+    const optionIndex = {};
+
+    for (const [cat, items] of Object.entries(opts)) {
+        if (!grouped[cat]) grouped[cat] = { options: [], capabilities: [] };
+        for (const item of items) {
+            item._type = 'option';
+            item._category = cat;
+            item._capCount = 0;
+            grouped[cat].options.push(item);
+            optionIndex[item.id] = item;
+        }
+    }
+
+    for (const [cat, items] of Object.entries(caps)) {
+        if (!grouped[cat]) grouped[cat] = { options: [], capabilities: [] };
+        for (const item of items) {
+            item._type = 'capability';
+            item._category = cat;
+            if (item.parentOption && optionIndex[item.parentOption.id]) {
+                item._standalone = false;
+                optionIndex[item.parentOption.id]._capCount =
+                    (optionIndex[item.parentOption.id]._capCount || 0) + 1;
+            } else {
+                item._standalone = true;
+            }
+            grouped[cat].capabilities.push(item);
+        }
+    }
+}
+
+/* ── Schemes ── */
+function collectSchemes() {
+    const set = new Set();
+    for (const cat of Object.values(grouped)) {
+        for (const item of [...cat.options, ...cat.capabilities]) {
+            if (item.scheme) set.add(item.scheme);
+        }
+    }
+    allSchemes = [...set].sort();
+    const sel = document.getElementById('schemeSelect');
+    for (const s of allSchemes) {
+        const o = document.createElement('option');
+        o.value = s;
+        o.textContent = s;
+        sel.appendChild(o);
+    }
+}
+
+/* ── Stats ── */
+function renderStats() {
+    let totalOpts = 0, totalCaps = 0;
+    const catCount = Object.keys(grouped).length;
+    const schemeCount = allSchemes.length;
+    for (const cat of Object.values(grouped)) {
+        totalOpts += cat.options.length;
+        totalCaps += cat.capabilities.length;
+    }
+    const total = totalOpts + totalCaps;
+    document.getElementById('totalBadge').textContent = total + ' item' + (total !== 1 ? 's' : '');
+    document.getElementById('statsBar').innerHTML =
+        `<span class="stat"><strong>${totalOpts}</strong> options</span>` +
+        `<span class="stat"><strong>${totalCaps}</strong> capabilities</span>` +
+        `<span class="stat"><strong>${catCount}</strong> categories</span>` +
+        `<span class="stat"><strong>${schemeCount}</strong> scheme${schemeCount !== 1 ? 's' : ''}: ${allSchemes.join(', ') || 'none'}</span>`;
+}
+
+/* ── Render ── */
+function renderCategories() {
+    const main = document.getElementById('mainContent');
+    const savedCats = JSON.parse(localStorage.getItem(LS_PREFIX + 'cats') || '{}');
+    const sortedCats = Object.keys(grouped).sort();
+
+    let html = '';
+    for (const cat of sortedCats) {
+        const data = grouped[cat];
+        const itemCount = data.options.length + data.capabilities.length;
+        const isOpen = savedCats[cat] !== false;
+        const catId = 'cat-' + cat.replace(/[^a-z0-9]/gi, '_');
+
+        html += `<div class="category-card" data-cat="${esc(cat)}" id="${catId}">`;
+        html += `<div class="cat-header" onclick="toggleCat('${esc(cat)}','${catId}')">`;
+        html += `<span class="cat-arrow${isOpen ? ' open' : ''}">&#9654;</span>`;
+        html += `<span class="cat-name">${esc(formatCatName(cat))}</span>`;
+        html += `<span class="cat-count">(${itemCount})</span>`;
+        html += `</div>`;
+        html += `<div class="cat-items${isOpen ? ' open' : ''}">`;
+
+        // Render options, with their child capabilities nested below
+        for (const opt of data.options) {
+            html += renderOption(opt);
+            // Nested capabilities
+            const children = data.capabilities.filter(c => !c._standalone && c.parentOption && c.parentOption.id === opt.id);
+            for (const cap of children) {
+                html += renderCapability(cap, false);
+            }
+        }
+        // Standalone capabilities
+        const standalone = data.capabilities.filter(c => c._standalone);
+        for (const cap of standalone) {
+            html += renderCapability(cap, true);
+        }
+
+        html += `</div></div>`;
+    }
+
+    if (!html) {
+        main.innerHTML = '<div class="empty-state"><h2>No Code Inventory Data</h2><p>No options or capabilities found.</p></div>';
+        return;
+    }
+
+    main.innerHTML = html;
+}
+
+function renderOption(opt) {
+    const search = buildSearch(opt);
+    let h = `<div class="inv-item" data-search="${esc(search)}" data-scheme="${esc(opt.scheme || '')}">`;
+    h += `<div class="inv-item-name">${esc(opt.name)}`;
+    if (opt._capCount > 0) {
+        h += `<span class="cap-count">${opt._capCount} cap${opt._capCount !== 1 ? 's' : ''}</span>`;
+    }
+    h += `</div>`;
+    if (opt.description) h += `<div class="inv-item-desc">${esc(opt.description)}</div>`;
+    if (opt.whyItMatters) h += `<div class="inv-item-why">${esc(opt.whyItMatters)}</div>`;
+    if (opt.codeClass) h += `<div class="inv-item-class">${esc(opt.codeClass)}</div>`;
+    const meta = [opt.scheme, opt.lastModified].filter(Boolean).join(' \u00B7 ');
+    if (meta) h += `<div class="inv-item-meta">${esc(meta)}</div>`;
+    h += `</div>`;
+    return h;
+}
+
+function renderCapability(cap, standalone) {
+    const search = buildSearch(cap);
+    let h = `<div class="inv-capability${standalone ? ' standalone' : ''}" data-search="${esc(search)}" data-scheme="${esc(cap.scheme || '')}">`;
+    h += `<div class="inv-cap-name"><span class="cap-prefix">${standalone ? '\u2022' : '\u2517'}</span>${esc(cap.name)}</div>`;
+    if (cap.description) h += `<div class="inv-cap-desc">${esc(cap.description)}</div>`;
+    if (cap.whyItMatters) h += `<div class="inv-cap-why">${esc(cap.whyItMatters)}</div>`;
+    // Method signature
+    if (cap.methodName) {
+        const sig = (cap.returnType || 'void') + ' ' + cap.methodName + '(' + (cap.parameters || '') + ')';
+        h += `<div class="inv-cap-sig">${esc(sig)}</div>`;
+    }
+    const meta = [cap.scheme, cap.lastModified].filter(Boolean).join(' \u00B7 ');
+    if (meta) h += `<div class="inv-cap-meta">${esc(meta)}</div>`;
+    h += `</div>`;
+    return h;
+}
+
+function buildSearch(item) {
+    return [item.name, item.description, item.whyItMatters, item.codeClass, item.scheme, item.methodName]
+        .filter(Boolean).join(' ').toLowerCase();
+}
+
+/* ── Category toggle ── */
+function toggleCat(catKey, catId) {
+    const card = document.getElementById(catId);
+    const items = card.querySelector('.cat-items');
+    const arrow = card.querySelector('.cat-arrow');
+    const isOpen = items.classList.toggle('open');
+    arrow.classList.toggle('open', isOpen);
+    saveCatState(catKey, isOpen);
+}
+
+function saveCatState(catKey, isOpen) {
+    const cats = JSON.parse(localStorage.getItem(LS_PREFIX + 'cats') || '{}');
+    cats[catKey] = isOpen;
+    localStorage.setItem(LS_PREFIX + 'cats', JSON.stringify(cats));
+}
+
+function expandAll() {
+    document.querySelectorAll('.cat-items').forEach(el => el.classList.add('open'));
+    document.querySelectorAll('.cat-arrow').forEach(el => el.classList.add('open'));
+    const cats = {};
+    Object.keys(grouped).forEach(k => cats[k] = true);
+    localStorage.setItem(LS_PREFIX + 'cats', JSON.stringify(cats));
+}
+
+function collapseAll() {
+    document.querySelectorAll('.cat-items').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.cat-arrow').forEach(el => el.classList.remove('open'));
+    const cats = {};
+    Object.keys(grouped).forEach(k => cats[k] = false);
+    localStorage.setItem(LS_PREFIX + 'cats', JSON.stringify(cats));
+}
+
+/* ── Filtering ── */
+function applyFilters() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const scheme = document.getElementById('schemeSelect').value;
+    const isFiltering = q || scheme;
+
+    // Save pre-filter state on first filter action
+    if (isFiltering && !preFilterCatState) {
+        preFilterCatState = {};
+        document.querySelectorAll('.category-card').forEach(card => {
+            const cat = card.dataset.cat;
+            preFilterCatState[cat] = card.querySelector('.cat-items').classList.contains('open');
+        });
+    }
+
+    let totalVisible = 0;
+
+    document.querySelectorAll('.category-card').forEach(card => {
+        const catItems = card.querySelector('.cat-items');
+        const arrow = card.querySelector('.cat-arrow');
+        let catVisible = 0;
+
+        // Filter individual items
+        card.querySelectorAll('.inv-item, .inv-capability').forEach(el => {
+            const matchText = !q || el.dataset.search.includes(q);
+            const matchScheme = !scheme || el.dataset.scheme === scheme;
+            const show = matchText && matchScheme;
+            el.classList.toggle('hidden', !show);
+            if (show) catVisible++;
+        });
+
+        // Show/hide entire category
+        if (isFiltering) {
+            card.classList.toggle('hidden', catVisible === 0);
+            if (catVisible > 0) {
+                catItems.classList.add('open');
+                arrow.classList.add('open');
+            }
+        } else {
+            card.classList.remove('hidden');
+        }
+
+        totalVisible += catVisible;
+    });
+
+    // Restore pre-filter state when clearing
+    if (!isFiltering && preFilterCatState) {
+        document.querySelectorAll('.category-card').forEach(card => {
+            const cat = card.dataset.cat;
+            const wasOpen = preFilterCatState[cat];
+            card.querySelector('.cat-items').classList.toggle('open', wasOpen);
+            card.querySelector('.cat-arrow').classList.toggle('open', wasOpen);
+        });
+        preFilterCatState = null;
+    }
+
+    // No results message
+    let noRes = document.getElementById('noResults');
+    if (isFiltering && totalVisible === 0) {
+        if (!noRes) {
+            noRes = document.createElement('div');
+            noRes.id = 'noResults';
+            noRes.className = 'no-results';
+            document.getElementById('mainContent').appendChild(noRes);
+        }
+        noRes.textContent = "No items matching '" + (q || scheme) + "'";
+        noRes.classList.remove('hidden');
+    } else if (noRes) {
+        noRes.classList.add('hidden');
+    }
+}
+
+/* ── Theme ── */
+function toggleTheme() {
+    const isLight = document.documentElement.classList.contains('light');
+    applyTheme(isLight ? 'dark' : 'light');
+}
+
+function applyTheme(theme) {
+    document.documentElement.classList.toggle('light', theme === 'light');
+    localStorage.setItem(LS_PREFIX + 'theme', theme);
+    document.getElementById('themeBtn').innerHTML = theme === 'light' ? '&#9728;' : '&#9790;';
+}
+
+/* ── Helpers ── */
+function formatCatName(cat) {
+    return cat.replace(/([a-z])([A-Z])/g, '$1 $2')
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
